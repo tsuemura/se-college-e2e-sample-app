@@ -12,7 +12,7 @@ async function loginAsTanaka(page: Page) {
 
 // 新規予約フォームを埋める（参加人数だけをテストごとに変える）
 async function fillReservationForm(page: Page, participants: string) {
-  await page.getByRole('link', { name: '新規予約' }).first().click();
+  await page.getByRole('link', { name: '新規予約' }).click();
   await page.getByLabel('会議室').selectOption('A'); // 定員 6 名
   await page.getByLabel('日付').fill('2030-04-02');
   await page.getByLabel('開始時刻').selectOption('10:00');
