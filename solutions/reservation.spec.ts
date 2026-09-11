@@ -17,7 +17,7 @@ test.describe('会議室の予約', () => {
   });
 
   test('会議室を予約すると一覧に表示される', async ({ page }) => {
-    await page.getByRole('link', { name: '新規予約' }).first().click();
+    await page.getByRole('link', { name: '新規予約' }).click();
     await page.getByLabel('会議室').selectOption('C');
     await page.getByLabel('日付').fill('2030-04-02');
     await page.getByLabel('開始時刻').selectOption('14:00');
@@ -36,7 +36,7 @@ test.describe('会議室の予約', () => {
 
   test('予約済みの時間帯には予約できない', async ({ page }) => {
     // 初期データ: 会議室A 2030-04-01 10:00〜11:00 に「プロジェクト定例」がある
-    await page.getByRole('link', { name: '新規予約' }).first().click();
+    await page.getByRole('link', { name: '新規予約' }).click();
     await page.getByLabel('会議室').selectOption('A');
     await page.getByLabel('日付').fill('2030-04-01');
     await page.getByLabel('開始時刻').selectOption('10:30');
@@ -49,7 +49,7 @@ test.describe('会議室の予約', () => {
   });
 
   test('終了時刻が開始時刻より前だと予約できない', async ({ page }) => {
-    await page.getByRole('link', { name: '新規予約' }).first().click();
+    await page.getByRole('link', { name: '新規予約' }).click();
     await page.getByLabel('会議室').selectOption('A');
     await page.getByLabel('日付').fill('2030-04-02');
     await page.getByLabel('開始時刻').selectOption('11:00');
