@@ -1,6 +1,6 @@
 {
   "name": "se-college-e2e-sample-app",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "実践E2E自動テスト 演習用サンプルアプリケーション（会議室予約システム）",
   "engines": {

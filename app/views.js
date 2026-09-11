@@ -108,6 +108,7 @@ function reservationRow(reservation, { rooms, users, currentUser }) {
       <td>${escapeHtml(reservation.date)}</td>
       <td>${escapeHtml(reservation.startTime)}〜${escapeHtml(reservation.endTime)}</td>
       <td>${escapeHtml(room ? room.name : reservation.roomId)}</td>
+      <td>${escapeHtml(reservation.participants)}名</td>
       <td>${escapeHtml(reservation.purpose)}</td>
       <td>${escapeHtml(owner ? owner.name : reservation.userId)}</td>
       <td>${cancelForm}</td>
@@ -127,6 +128,7 @@ function listPage({ user, flash, reservations, rooms, users }) {
           <th scope="col">日付</th>
           <th scope="col">時間</th>
           <th scope="col">会議室</th>
+          <th scope="col">人数</th>
           <th scope="col">目的</th>
           <th scope="col">予約者</th>
           <th scope="col">操作</th>
@@ -181,6 +183,10 @@ function newReservationPage({ user, rooms, timeSlots, values = {}, errors = [] }
           <option value="">--:--</option>
           ${options(timeSlots, values.endTime)}
         </select>
+      </div>
+      <div class="field">
+        <label for="participants">参加人数</label>
+        <input id="participants" name="participants" type="number" value="${escapeHtml(values.participants ?? 1)}" min="1" required>
       </div>
       <div class="field">
         <label for="purpose">目的</label>

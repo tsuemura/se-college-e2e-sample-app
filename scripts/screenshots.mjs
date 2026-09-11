@@ -61,10 +61,11 @@ try {
   await shot('new');
 
   await page.getByLabel('会議室').selectOption('A');
-  await page.getByLabel('日付').fill('2030-04-01');
-  await page.getByLabel('開始時刻').selectOption('10:30');
-  await page.getByLabel('終了時刻').selectOption('11:30');
-  await page.getByLabel('目的').fill('重複する予約');
+  await page.getByLabel('日付').fill('2030-04-02');
+  await page.getByLabel('開始時刻').selectOption('10:00');
+  await page.getByLabel('終了時刻').selectOption('11:00');
+  await page.getByLabel('参加人数').fill('7');
+  await page.getByLabel('目的').fill('定員を超える予約');
   await page.getByRole('button', { name: '予約する' }).click();
   await shot('new-error');
 
@@ -72,6 +73,7 @@ try {
   await page.getByLabel('日付').fill('2030-04-02');
   await page.getByLabel('開始時刻').selectOption('14:00');
   await page.getByLabel('終了時刻').selectOption('15:00');
+  await page.getByLabel('参加人数').fill('4');
   await page.getByLabel('目的').fill('勉強会');
   await page.getByRole('button', { name: '予約する' }).click();
   await shot('list-created');

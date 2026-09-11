@@ -33,8 +33,18 @@ jobs:
       - name: Run tests (tests/)
         run: npm test
 
-      - name: Run solution tests (solutions/)
-        run: npm run test:solutions
+      # v2 ブランチには意図的なリグレッション（ダブルブッキングが可能になる）を仕込んでいる。
+      # v1 用の完成版テストのうち「予約済みの時間帯には予約できない」だけが失敗し、
+      # 他はすべて成功することを確認する。
+      - name: Run solution tests (solutions/) - one failure is expected
+        id: solutions
+        run: npm run test:solutions -- --reporter=list,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: results-solutions.json
+        continue-on-error: true
+
+      - name: Verify that only the expected regression test failed
+        run: node scripts/check-expected-failures.mjs results-solutions.json scripts/expected-failures.json
 
       - name: Upload report on failure
         if: failure()

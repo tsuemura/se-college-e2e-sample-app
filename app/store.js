@@ -34,6 +34,7 @@ function seedReservations() {
       startTime: '10:00',
       endTime: '11:00',
       purpose: 'プロジェクト定例',
+      participants: 5,
       userId: 'tanaka',
     },
     {
@@ -43,6 +44,7 @@ function seedReservations() {
       startTime: '13:00',
       endTime: '15:00',
       purpose: '採用面接',
+      participants: 3,
       userId: 'suzuki',
     },
   ];

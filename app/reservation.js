@@ -33,6 +33,7 @@ function validateReservation(input) {
   const startTime = String(input.startTime || '');
   const endTime = String(input.endTime || '');
   const purpose = String(input.purpose || '').trim();
+  const participants = Number(input.participants);
 
   const room = findRoom(roomId);
   if (!room) {
@@ -49,9 +50,14 @@ function validateReservation(input) {
   if (purpose === '') {
     errors.push('目的を入力してください');
   }
+  if (!Number.isInteger(participants) || participants < 1) {
+    errors.push('参加人数は1以上の整数で入力してください');
+  } else if (room && participants > room.capacity) {
+    errors.push(`参加人数が会議室の定員（${room.capacity}名）を超えています`);
+  }
 
   if (errors.length === 0) {
-    const conflict = findConflict(store.reservations, roomId, date, startTime, endTime);
+    const conflict = findConflict(store.reservations, room, date, startTime, endTime);
     if (conflict) {
       errors.push('指定した時間帯はすでに予約されています');
     }
@@ -62,7 +68,7 @@ function validateReservation(input) {
   }
   return {
     errors: [],
-    reservation: { roomId, date, startTime, endTime, purpose },
+    reservation: { roomId, date, startTime, endTime, purpose, participants },
   };
 }
 
