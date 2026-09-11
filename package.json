@@ -1,0 +1,18 @@
+{
+  "name": "se-college-e2e-sample-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "実践E2E自動テスト 演習用サンプルアプリケーション（会議室予約システム）",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node app/server.js",
+    "test": "playwright test",
+    "test:solutions": "playwright test --config playwright.solutions.config.ts",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
