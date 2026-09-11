@@ -57,7 +57,7 @@ function validateReservation(input) {
   }
 
   if (errors.length === 0) {
-    const conflict = findConflict(store.reservations, room, date, startTime, endTime);
+    const conflict = findConflict(store.reservations, roomId, date, startTime, endTime);
     if (conflict) {
       errors.push('指定した時間帯はすでに予約されています');
     }
