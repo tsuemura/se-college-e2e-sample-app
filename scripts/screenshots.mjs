@@ -57,7 +57,7 @@ try {
   await login(page);
   await shot('list');
 
-  await page.getByRole('link', { name: '新規予約' }).first().click();
+  await page.getByRole('link', { name: '新規予約' }).click();
   await shot('new');
 
   await page.getByLabel('会議室').selectOption('A');
