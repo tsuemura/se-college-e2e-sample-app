@@ -25,7 +25,6 @@ function layout({ title, user, flash, body }) {
     ? `
       <nav class="nav">
         <a href="/">予約一覧</a>
-        <a href="/reservations/new">新規予約</a>
       </nav>
       <div class="account">
         <span>ログイン中: ${escapeHtml(user.name)}</span>
