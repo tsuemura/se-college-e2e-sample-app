@@ -38,7 +38,7 @@ cd $HOME\Downloads\se-college-e2e-sample-app-main
 npm install
 ```
 
-Playwright と、テストで使うブラウザ（Chromium）も一緒にインストールされます。数分かかることがあります。
+Playwright と、テストで使うブラウザ（Chromium）も一緒にインストールされます。環境により数秒から十数分かかります。
 
 ### 3. 起動
 
@@ -100,13 +100,13 @@ playwright.config.ts   Playwright の設定
 git checkout v2
 ```
 
-ZIP の場合は `v2` ブランチの ZIP をダウンロードし、`app` フォルダと `docs` フォルダを上書きコピーしてください。
+ZIP の場合は、先に今の `app` フォルダを `app-v1` という名前でコピーしておき（あとで差分を見るため）、`v2` ブランチの ZIP をダウンロードして `app` フォルダと `docs` フォルダを上書きコピーしてください。差分はコマンドプロンプトの `fc app-v1\reservation.js app\reservation.js` で確認できます。
 
 ## トラブルシューティング
 
 ### PowerShell で `npm` や `npx` を実行するとエラーになる
 
-「このシステムではスクリプトの実行が無効になっているため…」と表示される場合は、PowerShell のスクリプト実行ポリシーが原因です。次のいずれかで対処できます。
+「このシステムではスクリプトの実行が無効になっているため…」と表示される場合は、PowerShell のスクリプト実行ポリシーが原因です（`npm --version` の時点で出ます）。次のいずれかで対処できます。
 
 - コマンドプロンプトを使う
 - PowerShell で次を実行してから再度試す
@@ -114,6 +114,34 @@ ZIP の場合は `v2` ブランチの ZIP をダウンロードし、`app` フ�
   ```powershell
   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
   ```
+
+### Node.js のインストールで管理者の確認（UAC）が出る／管理者権限がない
+
+nodejs.org のインストーラーは管理者の確認が必要です。自分の PC なら「はい」を押してください。会社の PC などで管理者権限がない場合は、ユーザー権限だけでインストールできます。
+
+```powershell
+winget install --id OpenJS.NodeJS.LTS --scope user
+```
+
+### `node` や `npm` が「認識されていません」と出る
+
+インストール前から開いていたターミナルには反映されません。ターミナルを閉じて開き直してください。
+
+### ZIP を展開したのに `package.json` が見つからない
+
+「すべて展開」では、同じ名前のフォルダが二重にできることがあります。`package.json` があるフォルダまで `cd` してください。
+
+### 赤い文字で `npm notice` や `Warning` が出る
+
+通知です。失敗ではありません。`added N packages` や `N passed` が出ていれば成功しています。
+
+### テスト結果が `✓` ではなく `ok` と表示される
+
+Windows ではそれが正常です（パスも `\` 区切りになります）。`passed` / `failed` の件数を見てください。
+
+### `npx playwright show-report` でブラウザが開かない
+
+既定のブラウザが設定されていないと自動で開きません。表示された URL（http://localhost:9323）をブラウザで開いてください。終了はそのターミナルで `Ctrl + C` です。
 
 ### ポート 3000 がすでに使われている
 
@@ -125,6 +153,9 @@ $env:PORT = "4000"; npm start
 
 # コマンドプロンプト
 set PORT=4000 && npm start
+
+# macOS / Linux
+PORT=4000 npm start
 ```
 
 ### ブラウザのインストールに失敗した
