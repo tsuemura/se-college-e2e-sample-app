@@ -1,6 +1,7 @@
 name: CI
 
-# Windows と Linux の両方で、サンプルアプリとテストコードが動作することを確認する
+# 受講者が講座で行う手順をそのまま再現し、Windows と Linux の両方で
+# 「アプリが動くこと」と「course/solutions のテストが通ること」を確認する。
 on:
   push:
   pull_request:
@@ -20,31 +21,37 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: npm
 
-      # postinstall で Chromium もダウンロードされる
-      - name: Install dependencies
-        run: npm ci
+      # --- サンプルアプリのセットアップ（スライド「サンプルアプリのダウンロード」） ---
+      - name: Install the app
+        run: npm install
 
-      - name: Install Chromium OS dependencies (Linux only)
-        if: runner.os == 'Linux'
-        run: npx playwright install-deps chromium
+      # --- Playwright の導入（スライド「セットアップ：Playwright を入れる」） ---
+      - name: Install Playwright
+        run: npm install -D @playwright/test
 
-      - name: Run tests (tests/)
-        run: npm test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
 
+      - name: Copy the config and the solution tests
+        shell: bash
+        run: |
+          cp course/playwright.config.ts .
+          mkdir -p tests
+          cp course/solutions/*.spec.ts tests/
+
+      # --- テストの実行（スライド「新バージョンにテストを実行する」） ---
       # v2 ブランチには意図的なリグレッション（ダブルブッキングが可能になる）を仕込んでいる。
       # v1 用の完成版テストのうち「予約済みの時間帯には予約できない」だけが失敗し、
       # 他はすべて成功することを確認する。
-      - name: Run solution tests (solutions/) - one failure is expected
-        id: solutions
-        run: npm run test:solutions -- --reporter=list,json
+      - name: Run tests (one failure is expected)
+        run: npx playwright test --reporter=list,json
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: results-solutions.json
         continue-on-error: true
 
       - name: Verify that only the expected regression test failed
-        run: node scripts/check-expected-failures.mjs results-solutions.json scripts/expected-failures.json
+        run: node course/tools/check-expected-failures.mjs results-solutions.json course/tools/expected-failures.json
 
       - name: Upload report on failure
         if: failure()

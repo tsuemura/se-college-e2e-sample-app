@@ -1,6 +1,6 @@
 // CI 用: Playwright の JSON レポートを読み、「失敗したテストの一覧」が期待どおりか確認する。
 //
-//   node scripts/check-expected-failures.mjs <results.json> <expected-failures.json>
+//   node course/tools/check-expected-failures.mjs <results.json> <expected-failures.json>
 //
 // expected-failures.json には失敗するはずのテストタイトルを配列で書く。
 // 仕様変更版（v2 ブランチ）では意図的にリグレッションを仕込んでいるため、
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 
 const [resultsFile, expectedFile] = process.argv.slice(2);
 if (!resultsFile || !expectedFile) {
-  console.error('usage: node scripts/check-expected-failures.mjs <results.json> <expected-failures.json>');
+  console.error('usage: node course/tools/check-expected-failures.mjs <results.json> <expected-failures.json>');
   process.exit(2);
 }
 
