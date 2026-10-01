@@ -1,5 +1,6 @@
-// ドキュメント用のスクリーンショットを撮り直すスクリプト
-//   node scripts/screenshots.mjs
+// ドキュメント用のスクリーンショットを撮り直すスクリプト（講座の配布物。アプリの一部ではない）
+//   npm install -D @playwright/test && npx playwright install chromium   （未導入なら）
+//   node course/tools/screenshots.mjs
 // サンプルアプリを一時的にポート 3999 で起動し、docs/images/ に PNG を保存します。
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';

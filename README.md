@@ -1,10 +1,10 @@
-# 実践E2E自動テスト 演習用サンプルアプリケーション
+# 会議室予約システム（実践E2E自動テスト 演習用サンプルアプリケーション）
 
-講座「実践E2E自動テスト」で使う、演習用の Web アプリケーション「会議室予約システム」です。
-Playwright のテスト環境も含まれているので、`npm install` だけで演習を始められます。
+講座「実践E2E自動テスト」で使う、演習用の Web アプリケーションです。社内の会議室を予約する小さなアプリで、**自動テストはまだありません**。講座の中で、このアプリに Playwright を導入して E2E テストを書いていきます。
 
 - [仕様書](docs/spec.md)
 - [ユーザーマニュアル](docs/manual.md)
+- [講座用の配布物（設定ファイルの雛形、完成版のテスト）](course/README.md)
 
 ## 必要なもの
 
@@ -19,17 +19,17 @@ Playwright のテスト環境も含まれているので、`npm install` だけ�
 
 ### 1. ダウンロード
 
+ZIP を使う場合は、GitHub の「Code」→「Download ZIP」（または配布された ZIP）を保存し、右クリック →「すべて展開」で展開して、`package.json` があるフォルダにターミナルで移動します。
+
+```powershell
+cd $HOME\Downloads\se-college-e2e-sample-app-main
+```
+
 Git を使う場合:
 
 ```powershell
 git clone https://github.com/tsuemura/se-college-e2e-sample-app.git
 cd se-college-e2e-sample-app
-```
-
-ZIP を使う場合は、GitHub の「Code」→「Download ZIP」でダウンロードし、展開したフォルダにターミナルで移動します。
-
-```powershell
-cd $HOME\Downloads\se-college-e2e-sample-app-main
 ```
 
 ### 2. インストール
@@ -38,7 +38,7 @@ cd $HOME\Downloads\se-college-e2e-sample-app-main
 npm install
 ```
 
-Playwright と、テストで使うブラウザ（Chromium）も一緒にインストールされます。環境により数秒から十数分かかります。
+このアプリは Node.js の標準モジュールだけで動くので、すぐに終わります。
 
 ### 3. 起動
 
@@ -50,41 +50,25 @@ npm start
 ログインに使うアカウントは画面下部に表示されています（`tanaka` / `pass1234` など）。
 終了するときは `Ctrl + C` を押します。
 
-## テストの実行
+## 自動テストを追加する（講座で行う内容）
 
-アプリケーションを起動したままでも、起動していなくても実行できます（起動していなければ自動で起動します）。
-
-```powershell
-# tests フォルダのテストを実行する
-npx playwright test
-
-# ブラウザの画面を表示しながら実行する
-npx playwright test --headed
-
-# UI モード（テストを選んで実行・操作を確認できる）
-npx playwright test --ui
-
-# 直前の実行結果を HTML レポートで確認する
-npx playwright show-report
-
-# ブラウザ操作を記録してテストコードを生成する（別のターミナルで npm start しておく）
-npx playwright codegen http://localhost:3000
-```
-
-講義で紹介する完成版のテストコードは `solutions` フォルダにあり、次のコマンドで実行できます。
+このアプリには自動テストがありません。講座では次の手順で Playwright を導入します。詳しくは [course/README.md](course/README.md) を参照してください。
 
 ```powershell
-npm run test:solutions
+npm install -D @playwright/test
+npx playwright install chromium
+Copy-Item course\playwright.config.ts .     # cmd: copy course\playwright.config.ts .  / Mac: cp course/playwright.config.ts .
+mkdir tests
 ```
+
+`tests/` にテストを書いて `npx playwright test` で実行します。完成版は `course/solutions/` にあります。
 
 ## フォルダ構成
 
 ```
 app/          サンプルアプリケーション本体（Node.js 標準モジュールのみで動作）
 docs/         仕様書・ユーザーマニュアル
-tests/        演習で作成するテストコードを置くフォルダ
-solutions/    完成版のテストコード
-playwright.config.ts   Playwright の設定
+course/       講座用の配布物（Playwright の設定ファイルの雛形、完成版のテスト、講師用ツール）
 ```
 
 ## バージョンについて
@@ -93,8 +77,9 @@ playwright.config.ts   Playwright の設定
 | --- | --- |
 | `main` | 最初のバージョン（v1） |
 | `v2` | 仕様追加版。講義の後半で使います |
+| `v2-fixed` | v2 の不具合を修正し、新機能のテストを追加した答え |
 
-`v2` に切り替えるには次のコマンドを実行します（`tests` フォルダに作ったテストはそのまま残ります）。
+`v2` に切り替えるには次のコマンドを実行します（`tests` フォルダに作ったテストや、追加した Playwright はそのまま残ります）。
 
 ```powershell
 git checkout v2
@@ -131,21 +116,9 @@ winget install --id OpenJS.NodeJS.LTS --scope user
 
 「すべて展開」では、同じ名前のフォルダが二重にできることがあります。`package.json` があるフォルダまで `cd` してください。
 
-### 赤い文字で `npm notice` や `Warning` が出る
-
-通知です。失敗ではありません。`added N packages` や `N passed` が出ていれば成功しています。
-
-### テスト結果が `✓` ではなく `ok` と表示される
-
-Windows ではそれが正常です（パスも `\` 区切りになります）。`passed` / `failed` の件数を見てください。
-
-### `npx playwright show-report` でブラウザが開かない
-
-既定のブラウザが設定されていないと自動で開きません。表示された URL（http://localhost:9323）をブラウザで開いてください。終了はそのターミナルで `Ctrl + C` です。
-
 ### ポート 3000 がすでに使われている
 
-別のポートで起動できます。`playwright.config.ts` の `baseURL` と `webServer.url` も合わせて変更してください。
+別のポートで起動できます。Playwright を入れたあとは `playwright.config.ts` の `baseURL` と `webServer.url` も合わせて変更してください。
 
 ```powershell
 # PowerShell
@@ -158,13 +131,21 @@ set PORT=4000 && npm start
 PORT=4000 npm start
 ```
 
-### ブラウザのインストールに失敗した
+### ブラウザのインストールに失敗した（Playwright 導入時）
 
-ネットワークの都合で `npm install` 中のブラウザダウンロードに失敗した場合は、後から次のコマンドでインストールできます。
+ネットワークの都合で `npx playwright install chromium` に失敗した場合は、ネットワークを確認して再実行してください。社内プロキシがある場合は `HTTPS_PROXY` の設定が必要なことがあります。
 
-```powershell
-npx playwright install chromium
-```
+### 赤い文字で `npm notice` や `Warning` が出る
+
+通知です。失敗ではありません。`added N packages` や `N passed` が出ていれば成功しています。
+
+### テスト結果が `✓` ではなく `ok` と表示される
+
+Windows ではそれが正常です（パスも `\` 区切りになります）。`passed` / `failed` の件数を見てください。
+
+### `npx playwright show-report` でブラウザが開かない
+
+既定のブラウザが設定されていないと自動で開きません。表示された URL（http://localhost:9323）をブラウザで開いてください。終了はそのターミナルで `Ctrl + C` です。
 
 ### 状態をリセットしたい
 
