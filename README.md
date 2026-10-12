@@ -38,7 +38,7 @@ cd se-college-e2e-sample-app
 npm install
 ```
 
-このアプリは Node.js の標準モジュールだけで動くので、すぐに終わります。
+このアプリは Node.js の標準モジュールだけで動くので、すぐに終わります。`up to date in …` または `added N packages in …` と出れば完了です（`.npmrc` で npm の監査・寄付・更新通知のメッセージを出さないようにしてあります）。
 
 ### 3. 起動
 
@@ -135,9 +135,9 @@ PORT=4000 npm start
 
 ネットワークの都合で `npx playwright install chromium` に失敗した場合は、ネットワークを確認して再実行してください。社内プロキシがある場合は `HTTPS_PROXY` の設定が必要なことがあります。
 
-### 赤い文字で `npm notice` や `Warning` が出る
+### 英語の出力が多くて、成功したのか分からない
 
-通知です。失敗ではありません。`added N packages` や `N passed` が出ていれば成功しています。
+最後の 1〜2 行を見てください。`up to date` / `added N packages` / `downloaded to …` / `N passed` / `Version …` で終わっていれば成功です。`npm warn …` や `Warning: …` は注意書きで失敗ではありません。失敗のときは `npm ERR!` や `Error:` で止まります。
 
 ### テスト結果が `✓` ではなく `ok` と表示される
 
