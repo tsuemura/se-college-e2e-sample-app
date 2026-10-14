@@ -3,11 +3,12 @@
 // ---------------------------------------------------------------
 // 会議室予約システム（演習用サンプルアプリケーション）
 //
-//   npm start            -> http://localhost:3000 で起動
-//   PORT=4000 npm start  -> ポートを変更して起動
+//   npm start                 -> http://localhost:3000 で起動
+//   PORT=4000 npm start       -> ポートを変更して起動
+//   HOST=0.0.0.0 npm start    -> 他のマシンからも接続できるようにする（コンテナなど）
 //
 // 外部ライブラリを使わず、Node.js 標準の http モジュールだけで動きます。
-// データはメモリ上に保持され、再起動または「データを初期化」で初期状態に戻ります。
+// データはメモリ上に保持され、再起動すると初期状態に戻ります。
 // ---------------------------------------------------------------
 
 const http = require('node:http');
@@ -17,18 +18,23 @@ const crypto = require('node:crypto');
 
 const {
   store,
-  resetData,
+  signUp,
   findUser,
+  workspaceOf,
   findReservation,
   addReservation,
   removeReservation,
   sortedReservations,
 } = require('./store');
 const { validateReservation } = require('./reservation');
+const { validateSignup } = require('./account');
+const markdown = require('./markdown');
 const views = require('./views');
 
 const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || '127.0.0.1';
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const DOCS_DIR = path.join(__dirname, '..', 'docs');
 
 // ---- 小さなユーティリティ ---------------------------------------
 
@@ -60,14 +66,15 @@ function sendHtml(res, html, status = 200, headers = {}) {
   res.end(html);
 }
 
-function sendJson(res, data, status = 200) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(data));
-}
-
 function redirect(res, location, headers = {}) {
   res.writeHead(302, { Location: location, ...headers });
   res.end();
+}
+
+function startSession(res, userId, location) {
+  const sid = crypto.randomBytes(16).toString('hex');
+  store.sessions.set(sid, userId);
+  return redirect(res, location, { 'Set-Cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Lax` });
 }
 
 function currentUser(req) {
@@ -76,17 +83,22 @@ function currentUser(req) {
   return userId ? findUser(userId) : null;
 }
 
-function serveStatic(res, fileName) {
+function ownerName(userId) {
+  const owner = findUser(userId);
+  return owner ? owner.name : userId;
+}
+
+function serveFile(res, dir, fileName, types) {
   const safeName = path.basename(fileName);
-  const filePath = path.join(PUBLIC_DIR, safeName);
+  const filePath = path.join(dir, safeName);
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.writeHead(404);
       res.end('Not Found');
       return;
     }
-    const type = safeName.endsWith('.css') ? 'text/css; charset=utf-8' : 'application/octet-stream';
-    res.writeHead(200, { 'Content-Type': type });
+    const ext = path.extname(safeName);
+    res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
     res.end(data);
   });
 }
@@ -101,20 +113,37 @@ async function handle(req, res) {
 
   // 静的ファイル
   if (method === 'GET' && pathname.startsWith('/public/')) {
-    return serveStatic(res, pathname.slice('/public/'.length));
+    return serveFile(res, PUBLIC_DIR, pathname.slice('/public/'.length), { '.css': 'text/css; charset=utf-8' });
+  }
+  if (method === 'GET' && pathname.startsWith('/docs/images/')) {
+    return serveFile(res, path.join(DOCS_DIR, 'images'), pathname.slice('/docs/images/'.length), { '.png': 'image/png' });
   }
 
-  // 開発・テスト用 API
-  if (pathname === '/api/reset' && method === 'POST') {
-    resetData();
-    return sendJson(res, { ok: true });
+  // 仕様書・マニュアル（docs/*.md を画面で読めるようにする）
+  const docMatch = pathname.match(/^\/docs\/([a-z0-9-]+)$/);
+  if (docMatch && method === 'GET') {
+    const file = path.join(DOCS_DIR, `${docMatch[1]}.md`);
+    if (!fs.existsSync(file)) {
+      return sendHtml(res, views.messagePage({ user, title: 'ページが見つかりません', message: `${pathname} は存在しません。` }), 404);
+    }
+    const text = fs.readFileSync(file, 'utf8');
+    const title = (text.match(/^#\s+(.+)$/m) || [, docMatch[1]])[1];
+    return sendHtml(res, views.docPage({ user, title, html: markdown.render(text) }));
   }
-  if (pathname === '/api/reservations' && method === 'GET') {
-    return sendJson(res, sortedReservations());
+
+  // 新規登録
+  if (pathname === '/signup' && method === 'GET') {
+    if (user) return redirect(res, '/');
+    return sendHtml(res, views.signupPage());
   }
-  if (pathname === '/reset' && method === 'POST') {
-    resetData();
-    return redirect(res, '/?flash=reset');
+  if (pathname === '/signup' && method === 'POST') {
+    const form = await readForm(req);
+    const { errors, values } = validateSignup(form);
+    if (errors.length > 0) {
+      return sendHtml(res, views.signupPage({ values, errors }), 400);
+    }
+    const created = signUp(values);
+    return startSession(res, created.id, '/?flash=signed-up');
   }
 
   // ログイン / ログアウト
@@ -124,16 +153,14 @@ async function handle(req, res) {
   }
   if (pathname === '/login' && method === 'POST') {
     const form = await readForm(req);
-    const found = findUser(String(form.userId || ''));
-    if (!found || found.password !== String(form.password || '')) {
+    const found = findUser(String(form.userId || '').trim().toLowerCase()) || findUser(String(form.userId || ''));
+    if (!found || !found.password || found.password !== String(form.password || '')) {
       return sendHtml(
         res,
         views.loginPage({ error: 'ユーザーIDまたはパスワードが正しくありません', userId: form.userId }),
       );
     }
-    const sid = crypto.randomBytes(16).toString('hex');
-    store.sessions.set(sid, found.id);
-    return redirect(res, '/', { 'Set-Cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Lax` });
+    return startSession(res, found.id, '/');
   }
   if (pathname === '/logout' && method === 'POST') {
     const { sid } = parseCookies(req);
@@ -147,6 +174,7 @@ async function handle(req, res) {
   if (!user) {
     return redirect(res, '/login');
   }
+  const workspace = workspaceOf(user);
 
   if (pathname === '/' && method === 'GET') {
     return sendHtml(
@@ -154,9 +182,9 @@ async function handle(req, res) {
       views.listPage({
         user,
         flash: url.searchParams.get('flash'),
-        reservations: sortedReservations(),
+        reservations: sortedReservations(workspace),
         rooms: store.rooms,
-        users: store.users,
+        ownerName,
       }),
     );
   }
@@ -170,7 +198,7 @@ async function handle(req, res) {
 
   if (pathname === '/reservations' && method === 'POST') {
     const form = await readForm(req);
-    const { errors, reservation } = validateReservation(form);
+    const { errors, reservation } = validateReservation(form, workspace);
     if (errors.length > 0) {
       return sendHtml(
         res,
@@ -184,13 +212,13 @@ async function handle(req, res) {
         400,
       );
     }
-    addReservation({ ...reservation, userId: user.id });
+    addReservation(workspace, { ...reservation, userId: user.id });
     return redirect(res, '/?flash=created');
   }
 
   const cancelMatch = pathname.match(/^\/reservations\/(\d+)\/cancel$/);
   if (cancelMatch && method === 'POST') {
-    const reservation = findReservation(Number(cancelMatch[1]));
+    const reservation = findReservation(workspace, Number(cancelMatch[1]));
     if (!reservation) {
       return sendHtml(
         res,
@@ -205,7 +233,7 @@ async function handle(req, res) {
         403,
       );
     }
-    removeReservation(reservation.id);
+    removeReservation(workspace, reservation.id);
     return redirect(res, '/?flash=cancelled');
   }
 
@@ -224,7 +252,7 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, HOST, () => {
   console.log(`会議室予約システムを起動しました: http://localhost:${PORT}`);
   console.log('終了するには Ctrl + C を押してください');
 });

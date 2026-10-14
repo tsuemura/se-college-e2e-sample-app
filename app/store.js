@@ -2,13 +2,13 @@
 
 // ---------------------------------------------------------------
 // インメモリのデータストア
-// サーバーを再起動するか、POST /api/reset を呼ぶと初期データに戻ります。
+//
+// 利用者はワークスペース（会社）に所属し、予約はワークスペースごとに分かれています。
+//   - デモ用ワークスペース "demo": あらかじめ登録された田中さんと鈴木さんが所属
+//   - 新規登録（サインアップ）すると新しいワークスペースが作られ、
+//     サンプルの予約が入った状態で始まります
+// データはサーバーのメモリ上に保持され、再起動すると初期状態に戻ります。
 // ---------------------------------------------------------------
-
-const USERS = [
-  { id: 'tanaka', password: 'pass1234', name: '田中 太郎' },
-  { id: 'suzuki', password: 'pass1234', name: '鈴木 花子' },
-];
 
 const ROOMS = [
   { id: 'A', name: '会議室A', capacity: 6 },
@@ -25,7 +25,23 @@ for (let hour = 9; hour <= 18; hour++) {
   }
 }
 
-function seedReservations() {
+const store = {
+  users: new Map(), // userId -> { id, name, password, workspaceId }
+  workspaces: new Map(), // workspaceId -> { id, reservations, nextReservationId }
+  rooms: ROOMS,
+  timeSlots: TIME_SLOTS,
+  sessions: new Map(), // sessionId -> userId
+};
+
+let nextWorkspaceNumber = 1;
+
+function addUser(user) {
+  store.users.set(user.id, user);
+  return user;
+}
+
+// ワークスペースを作ったときに入っているサンプルの予約
+function sampleReservations([owner1, owner2]) {
   return [
     {
       id: 1,
@@ -35,7 +51,7 @@ function seedReservations() {
       endTime: '11:00',
       purpose: 'プロジェクト定例',
       participants: 5,
-      userId: 'tanaka',
+      userId: owner1,
     },
     {
       id: 2,
@@ -45,49 +61,61 @@ function seedReservations() {
       endTime: '15:00',
       purpose: '採用面接',
       participants: 3,
-      userId: 'suzuki',
+      userId: owner2,
     },
   ];
 }
 
-const store = {
-  users: USERS,
-  rooms: ROOMS,
-  timeSlots: TIME_SLOTS,
-  reservations: seedReservations(),
-  nextReservationId: 3,
-  sessions: new Map(), // sessionId -> userId
-};
+function createWorkspace(id, sampleOwnerIds) {
+  const workspace = { id, reservations: sampleReservations(sampleOwnerIds), nextReservationId: 3 };
+  store.workspaces.set(id, workspace);
+  return workspace;
+}
 
-function resetData() {
-  store.reservations = seedReservations();
-  store.nextReservationId = 3;
+// デモ用ワークスペース（あらかじめ登録された利用者）
+createWorkspace('demo', ['tanaka', 'suzuki']);
+addUser({ id: 'tanaka', password: 'pass1234', name: '田中 太郎', workspaceId: 'demo' });
+addUser({ id: 'suzuki', password: 'pass1234', name: '鈴木 花子', workspaceId: 'demo' });
+
+/**
+ * 新規登録: 新しいワークスペースを作り、利用者を登録する。
+ * サンプルの予約は同僚（佐藤 一郎）の予約として入れる。ログインはできない。
+ */
+function signUp({ name, email, password }) {
+  const workspaceId = `ws-${nextWorkspaceNumber++}`;
+  const colleague = addUser({ id: `${workspaceId}:sato`, name: '佐藤 一郎', password: null, workspaceId });
+  createWorkspace(workspaceId, [colleague.id, colleague.id]);
+  return addUser({ id: email, name, password, workspaceId });
 }
 
 function findUser(userId) {
-  return store.users.find((u) => u.id === userId);
+  return store.users.get(userId);
 }
 
 function findRoom(roomId) {
   return store.rooms.find((r) => r.id === roomId);
 }
 
-function findReservation(id) {
-  return store.reservations.find((r) => r.id === id);
+function workspaceOf(user) {
+  return store.workspaces.get(user.workspaceId);
 }
 
-function addReservation(reservation) {
-  const saved = { id: store.nextReservationId++, ...reservation };
-  store.reservations.push(saved);
+function findReservation(workspace, id) {
+  return workspace.reservations.find((r) => r.id === id);
+}
+
+function addReservation(workspace, reservation) {
+  const saved = { id: workspace.nextReservationId++, ...reservation };
+  workspace.reservations.push(saved);
   return saved;
 }
 
-function removeReservation(id) {
-  store.reservations = store.reservations.filter((r) => r.id !== id);
+function removeReservation(workspace, id) {
+  workspace.reservations = workspace.reservations.filter((r) => r.id !== id);
 }
 
-function sortedReservations() {
-  return [...store.reservations].sort((a, b) => {
+function sortedReservations(workspace) {
+  return [...workspace.reservations].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
     if (a.startTime !== b.startTime) return a.startTime < b.startTime ? -1 : 1;
     return a.roomId < b.roomId ? -1 : a.roomId > b.roomId ? 1 : 0;
@@ -96,9 +124,10 @@ function sortedReservations() {
 
 module.exports = {
   store,
-  resetData,
+  signUp,
   findUser,
   findRoom,
+  workspaceOf,
   findReservation,
   addReservation,
   removeReservation,
