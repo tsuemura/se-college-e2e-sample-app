@@ -1,6 +1,0 @@
-{
-  "name": "e2e-starter",
-  "version": "1.0.0",
-  "private": true,
-  "description": "実践E2E自動テスト 受講者用のテストプロジェクト（デモ環境に対して Playwright でテストを書く）"
-}
