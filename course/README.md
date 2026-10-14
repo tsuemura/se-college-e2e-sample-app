@@ -25,7 +25,7 @@ npm init -y playwright@latest -- --quiet --browser=chromium --no-examples
     trace: 'retain-on-failure',
 ```
 
-あとは講座のとおり、`npx playwright codegen https://se-college-demo.takuyasuemura.workers.dev` で録画し、`tests/` に保存して `npx playwright test` で実行します。自分のアプリに入れるときも同じで、アプリのフォルダの中で `npm init playwright@latest` を実行し、`baseURL` を自分のアプリにするだけです。
+あとは講座のとおり、`npx playwright codegen https://se-college-demo.takuyasuemura.workers.dev` で録画し、`tests/` に保存して `npx playwright test` で実行します。デモ環境は全員で共有しているので、完成版のテストは日付を実行ごとに変え、作った予約を API（仕様書 7 章）で片付けるようにしてあります。自分のアプリに入れるときも同じで、アプリのフォルダの中で `npm init playwright@latest` を実行し、`baseURL` を自分のアプリにするだけです。
 
 ## ローカルのアプリに対して完成版を実行する（CI と同じ手順）
 

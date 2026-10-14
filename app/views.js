@@ -16,7 +16,6 @@ function escapeHtml(value) {
 const FLASH_MESSAGES = {
   created: '予約を登録しました',
   cancelled: '予約をキャンセルしました',
-  'signed-up': '登録が完了しました',
   'logged-out': 'ログアウトしました',
 };
 
@@ -85,7 +84,6 @@ function loginPage({ error, userId = '', flash } = {}) {
       </div>
       <button type="submit">ログイン</button>
     </form>
-    <p class="hint">アカウントをお持ちでない方は <a href="/signup">新規登録</a> してください（登録したメールアドレスがユーザーIDになります）</p>
     <aside class="hint">
       <p>デモ用アカウント（パスワードはどちらも <code>pass1234</code>）</p>
       <ul>
@@ -96,35 +94,9 @@ function loginPage({ error, userId = '', flash } = {}) {
   return layout({ title: 'ログイン', user: null, flash, body });
 }
 
-function signupPage({ values = {}, errors = [] } = {}) {
-  const body = `
-    <h2>新規登録</h2>
-    <p>登録すると、あなたの会社用のワークスペースが作られます。会議室 A〜C と、サンプルの予約が入った状態で始まります。</p>
-    ${errorList(errors)}
-    <form method="post" action="/signup" class="form">
-      <div class="field">
-        <label for="name">名前</label>
-        <input id="name" name="name" type="text" value="${escapeHtml(values.name || '')}" autocomplete="name" required>
-      </div>
-      <div class="field">
-        <label for="email">メールアドレス</label>
-        <input id="email" name="email" type="email" value="${escapeHtml(values.email || '')}" autocomplete="email" required>
-      </div>
-      <div class="field">
-        <label for="password">パスワード</label>
-        <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
-      </div>
-      <button type="submit">登録する</button>
-      <a href="/login" class="link">ログイン画面に戻る</a>
-    </form>
-    <aside class="hint">
-      <p>これは演習用のデモ環境です。実在のメールアドレスや個人情報は入力しないでください。登録したデータは定期的に消去されます。</p>
-    </aside>`;
-  return layout({ title: '新規登録', user: null, body });
-}
-
-function reservationRow(reservation, { rooms, ownerName, currentUser }) {
+function reservationRow(reservation, { rooms, users, currentUser }) {
   const room = rooms.find((r) => r.id === reservation.roomId);
+  const owner = users.find((u) => u.id === reservation.userId);
   const isOwner = currentUser && currentUser.id === reservation.userId;
   const cancelForm = isOwner
     ? `<form method="post" action="/reservations/${reservation.id}/cancel" class="inline">
@@ -137,14 +109,14 @@ function reservationRow(reservation, { rooms, ownerName, currentUser }) {
       <td>${escapeHtml(reservation.startTime)}〜${escapeHtml(reservation.endTime)}</td>
       <td>${escapeHtml(room ? room.name : reservation.roomId)}</td>
       <td>${escapeHtml(reservation.purpose)}</td>
-      <td>${escapeHtml(ownerName(reservation.userId))}</td>
+      <td>${escapeHtml(owner ? owner.name : reservation.userId)}</td>
       <td>${cancelForm}</td>
     </tr>`;
 }
 
-function listPage({ user, flash, reservations, rooms, ownerName }) {
+function listPage({ user, flash, reservations, rooms, users }) {
   const rows = reservations
-    .map((r) => reservationRow(r, { rooms, ownerName, currentUser: user }))
+    .map((r) => reservationRow(r, { rooms, users, currentUser: user }))
     .join('');
   const table = reservations.length === 0
     ? '<p class="empty">予約はありません</p>'
@@ -230,4 +202,4 @@ function docPage({ user, title, html }) {
   return layout({ title, user, body });
 }
 
-module.exports = { loginPage, signupPage, listPage, newReservationPage, messagePage, docPage };
+module.exports = { loginPage, listPage, newReservationPage, messagePage, docPage };
