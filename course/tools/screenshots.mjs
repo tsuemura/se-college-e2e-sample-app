@@ -53,9 +53,6 @@ try {
   await page.getByRole('button', { name: 'ログイン' }).click();
   await shot('login-error');
 
-  await page.goto(`${BASE}/signup`);
-  await shot('signup');
-
   await login(page);
   await shot('list');
 

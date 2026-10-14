@@ -23,17 +23,17 @@ function findConflict(reservations, roomId, date, startTime, endTime) {
 }
 
 /**
- * フォームの入力値を検証する。重複チェックはワークスペース内の予約に対して行う。
+ * 入力値を検証する（画面のフォームと API で共通）。
  * 戻り値: { errors: string[], reservation: object | null }
  */
-function validateReservation(input, workspace) {
+function validateReservation(input) {
   const errors = [];
   const roomId = String(input.roomId || '');
   const date = String(input.date || '');
   const startTime = String(input.startTime || '');
   const endTime = String(input.endTime || '');
   const purpose = String(input.purpose || '').trim();
-  const participants = Number(input.participants);
+  const participants = input.participants === undefined ? 1 : Number(input.participants); // API で省略されたら 1 名
 
   const room = findRoom(roomId);
   if (!room) {
@@ -57,7 +57,7 @@ function validateReservation(input, workspace) {
   }
 
   if (errors.length === 0) {
-    const conflict = findConflict(workspace.reservations, roomId, date, startTime, endTime);
+    const conflict = findConflict(store.reservations, roomId, date, startTime, endTime);
     if (conflict) {
       errors.push('指定した時間帯はすでに予約されています');
     }

@@ -1,28 +1,52 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// テストごとに新しいアカウントを作る（＝自分専用のワークスペースで始める）。
-// 画面のフォームと同じ送信先に直接 POST するので、サインアップ画面は経由しない。
-// page.request はブラウザと Cookie を共有するので、送った直後からログイン済みになる。
-async function signUp(page: Page) {
-  const email = `taro-${Date.now()}@example.com`; // 毎回違うメールアドレスにする
-  await page.request.post('/signup', {
-    form: { name: 'テスト 太郎', email, password: 'pass1234' },
-  });
+// この実行だけの目印。テストが作るデータに付けて、自分が作ったものだけを片付ける
+const runId = Date.now();
+
+// 田中さんとしてログインする（事前条件）。
+// 画面を通さず、ログインのフォームと同じ送信先に直接 POST する。
+// page.request はブラウザと Cookie を共有するので、送った直後からログイン済みになる
+async function loginAsTanaka(page: Page) {
+  await page.request.post('/login', { form: { userId: 'tanaka', password: 'pass1234' } });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '予約一覧' })).toBeVisible();
 }
 
+// テストが使う日付。今日から 1〜365 日後のどこかで、実行するたびに変わる（他の予約とぶつからないようにする）
+function uniqueDate(): string {
+  const days = 1 + (Date.now() % 365);
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// 予約を API で登録する（事前条件を画面を通さずに作る）
+async function createReservation(page: Page, data: { roomId: string; date: string; startTime: string; endTime: string; purpose: string }) {
+  const response = await page.request.post('/api/reservations', { data });
+  expect(response.status()).toBe(201);
+  return response.json();
+}
+
 test.describe('会議室の予約', () => {
   test.beforeEach(async ({ page }) => {
-    await signUp(page);
+    await loginAsTanaka(page);
+  });
+
+  // 事後条件: このテストが作った予約を API で消す（失敗したときも実行される）
+  test.afterEach(async ({ page }) => {
+    const reservations = await (await page.request.get('/api/reservations')).json();
+    for (const r of reservations) {
+      if (String(r.purpose).includes(String(runId))) {
+        await page.request.delete(`/api/reservations/${r.id}`);
+      }
+    }
   });
 
   test('会議室を予約すると一覧に表示される', async ({ page }) => {
-    const purpose = `勉強会 ${Date.now()}`; // 自分のテストが作ったデータだと分かる目印
+    const date = uniqueDate();
+    const purpose = `勉強会 ${runId}`;
 
     await page.getByRole('link', { name: '新規予約' }).click();
     await page.getByLabel('会議室').selectOption('C');
-    await page.getByLabel('日付').fill('2030-04-02');
+    await page.getByLabel('日付').fill(date);
     await page.getByLabel('開始時刻').selectOption('14:00');
     await page.getByLabel('終了時刻').selectOption('15:00');
     await page.getByLabel('目的').fill(purpose);
@@ -31,20 +55,23 @@ test.describe('会議室の予約', () => {
     await expect(page.getByText('予約を登録しました')).toBeVisible();
     const row = page.getByRole('row', { name: purpose });
     await expect(row).toBeVisible();
-    await expect(row).toContainText('2030-04-02');
+    await expect(row).toContainText(date);
     await expect(row).toContainText('14:00〜15:00');
     await expect(row).toContainText('会議室C');
-    await expect(row).toContainText('テスト 太郎');
+    await expect(row).toContainText('田中 太郎');
   });
 
   test('予約済みの時間帯には予約できない', async ({ page }) => {
-    // サインアップ直後のサンプル予約: 会議室A 2030-04-01 10:00〜11:00 に「プロジェクト定例」がある
+    const date = uniqueDate();
+    // 事前条件: 会議室A のこの日 10:00〜11:00 に予約がある
+    await createReservation(page, { roomId: 'A', date, startTime: '10:00', endTime: '11:00', purpose: `定例 ${runId}` });
+
     await page.getByRole('link', { name: '新規予約' }).click();
     await page.getByLabel('会議室').selectOption('A');
-    await page.getByLabel('日付').fill('2030-04-01');
+    await page.getByLabel('日付').fill(date);
     await page.getByLabel('開始時刻').selectOption('10:30');
     await page.getByLabel('終了時刻').selectOption('11:30');
-    await page.getByLabel('目的').fill('重複する予約');
+    await page.getByLabel('目的').fill(`重複する予約 ${runId}`);
     await page.getByRole('button', { name: '予約する' }).click();
 
     await expect(page.getByText('指定した時間帯はすでに予約されています')).toBeVisible();
@@ -52,14 +79,10 @@ test.describe('会議室の予約', () => {
   });
 
   test('自分の予約をキャンセルできる', async ({ page }) => {
-    const purpose = `キャンセルする予約 ${Date.now()}`;
-    await page.getByRole('link', { name: '新規予約' }).click();
-    await page.getByLabel('会議室').selectOption('B');
-    await page.getByLabel('日付').fill('2030-04-03');
-    await page.getByLabel('開始時刻').selectOption('09:00');
-    await page.getByLabel('終了時刻').selectOption('10:00');
-    await page.getByLabel('目的').fill(purpose);
-    await page.getByRole('button', { name: '予約する' }).click();
+    const date = uniqueDate();
+    const purpose = `キャンセルする予約 ${runId}`;
+    await createReservation(page, { roomId: 'B', date, startTime: '09:00', endTime: '10:00', purpose });
+    await page.reload();
 
     const row = page.getByRole('row', { name: purpose });
     await row.getByRole('button', { name: 'キャンセル' }).click();
@@ -69,8 +92,8 @@ test.describe('会議室の予約', () => {
   });
 
   test('他の人の予約にはキャンセルボタンが表示されない', async ({ page }) => {
-    const sampleRow = page.getByRole('row', { name: 'プロジェクト定例' }); // 同僚（佐藤 一郎）のサンプル予約
-    await expect(sampleRow).toBeVisible();
-    await expect(sampleRow.getByRole('button', { name: 'キャンセル' })).toHaveCount(0);
+    const row = page.getByRole('row', { name: '採用面接' }); // 鈴木さんの予約（初期データ）
+    await expect(row).toBeVisible();
+    await expect(row.getByRole('button', { name: 'キャンセル' })).toHaveCount(0);
   });
 });
