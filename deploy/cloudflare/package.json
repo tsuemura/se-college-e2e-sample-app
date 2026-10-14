@@ -1,0 +1,16 @@
+{
+  "name": "se-college-demo-deploy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "講座のデモ環境（会議室予約システム）を Cloudflare Containers にデプロイする",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.30"
+  },
+  "devDependencies": {
+    "wrangler": "^4.118.0"
+  }
+}

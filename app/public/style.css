@@ -61,3 +61,11 @@ button.danger { background: #fff; color: var(--danger); border-color: var(--dang
 .hint { margin-top: 1.5rem; font-size: 0.9rem; color: #57606a; }
 .empty { color: #57606a; }
 code { background: #eef1f4; padding: 0.1rem 0.3rem; border-radius: 4px; }
+.footer-links { display: flex; gap: 1rem; justify-content: flex-end; font-size: 0.9rem; }
+.footer-links a { color: #57606a; }
+.doc { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 2rem; line-height: 1.7; }
+.doc img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; }
+.doc pre { background: #eef1f4; padding: 0.75rem 1rem; border-radius: 6px; overflow-x: auto; }
+.doc pre code { background: none; padding: 0; }
+.doc blockquote { border-left: 4px solid var(--border); margin: 1rem 0; padding: 0.25rem 1rem; color: #57606a; }
+.doc .table { margin: 0.75rem 0; }

@@ -45,8 +45,6 @@ try {
   });
   const shot = (name) => page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true });
 
-  await page.request.post(`${BASE}/api/reset`);
-
   await page.goto(`${BASE}/login`);
   await shot('login');
 
@@ -54,6 +52,9 @@ try {
   await page.getByLabel('パスワード').fill('wrong');
   await page.getByRole('button', { name: 'ログイン' }).click();
   await shot('login-error');
+
+  await page.goto(`${BASE}/signup`);
+  await shot('signup');
 
   await login(page);
   await shot('list');
