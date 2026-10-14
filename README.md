@@ -3,11 +3,11 @@
 講座「実践E2E自動テスト」で使う、演習用の Web アプリケーションです。社内の会議室を予約する小さなアプリで、**自動テストはまだありません**。講座では、講師がデプロイしたデモ環境に対して、受講者が Playwright で E2E テストを書いていきます。
 
 - デモ環境: **https://se-college-demo.takuyasuemura.workers.dev**（講座期間中のみ。全員で同じ環境を使います）
-- 受講者用のテストプロジェクト（スターター ZIP）: [Releases](https://github.com/tsuemura/se-college-e2e-sample-app/releases)
+- 受講者は `npm init playwright@latest` でテスト用のフォルダを作り、`playwright.config.ts` の `baseURL` をデモ環境にして使います。完成版のテストは [course/solutions](course/solutions) にあります
 
 - [仕様書](docs/spec.md)
 - [ユーザーマニュアル](docs/manual.md)
-- [講座用の配布物（スターター、完成版のテスト、講師用ツール）](course/README.md)
+- [講座用の配布物（完成版のテスト、講師用ツール）](course/README.md)
 - [デモ環境のデプロイ手順](deploy/cloudflare/README.md)
 
 ## 自分の PC で動かす（講座では不要。付録）
@@ -74,7 +74,7 @@ mkdir tests
 ```
 app/          サンプルアプリケーション本体（Node.js 標準モジュールのみで動作）
 docs/         仕様書・ユーザーマニュアル（アプリの /docs/spec、/docs/manual でも読める）
-course/       講座用の配布物（スターター、完成版のテスト、講師用ツール）
+course/       講座用の配布物（完成版のテスト、講師用ツール）
 deploy/       デモ環境のデプロイ設定（Cloudflare Containers）
 ```
 
