@@ -2,11 +2,13 @@ import { test, expect, type Page } from '@playwright/test';
 
 // v2 で追加された「参加人数」に関するテスト
 
-async function loginAsTanaka(page: Page) {
-  await page.goto('/login');
-  await page.getByLabel('ユーザーID').fill('tanaka');
-  await page.getByLabel('パスワード').fill('pass1234');
-  await page.getByRole('button', { name: 'ログイン' }).click();
+// テストごとに新しいアカウントを作る（reservation.spec.ts と同じ）
+async function signUp(page: Page) {
+  const email = `taro-${Date.now()}@example.com`;
+  await page.request.post('/signup', {
+    form: { name: 'テスト 太郎', email, password: 'pass1234' },
+  });
+  await page.goto('/');
   await expect(page.getByRole('heading', { name: '予約一覧' })).toBeVisible();
 }
 
@@ -24,8 +26,7 @@ async function fillReservationForm(page: Page, participants: string) {
 
 test.describe('参加人数', () => {
   test.beforeEach(async ({ page }) => {
-    await page.request.post('/api/reset');
-    await loginAsTanaka(page);
+    await signUp(page);
   });
 
   test('参加人数が一覧に表示される', async ({ page }) => {
@@ -48,7 +49,7 @@ test.describe('参加人数', () => {
     await expect(page.getByRole('heading', { name: '新規予約' })).toBeVisible();
   });
 
-  test('初期データの参加人数が一覧に表示される', async ({ page }) => {
+  test('サンプル予約の参加人数が一覧に表示される', async ({ page }) => {
     await expect(page.getByRole('row', { name: 'プロジェクト定例' })).toContainText('5名');
     await expect(page.getByRole('row', { name: '採用面接' })).toContainText('3名');
   });
