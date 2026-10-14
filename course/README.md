@@ -4,26 +4,28 @@
 
 | パス | 内容 |
 | --- | --- |
-| `starter/` | 受講者に配るテストプロジェクトの雛形（設定ファイル、空の `tests/`）。`tools/build-starter.mjs` で `solutions/` と合わせて ZIP にする |
-| `solutions/` | 講座で作るテストコードの完成版。時間が足りないときは `tests/` にコピーしてよい |
+| `solutions/` | 講座で作るテストコードの完成版。時間が足りないときは `tests/` にコピーしてよい（GitHub で開いて「Copy raw file」） |
 | `playwright.config.ts` | ローカルで動かしたアプリに対して実行するときの設定（CI もこれを使う。`webServer` でアプリを自動起動する） |
-| `tools/` | 講師・CI 用のスクリプト（スターター ZIP の作成、スクリーンショットの再生成、CI の検証） |
+| `tools/` | 講師・CI 用のスクリプト（スクリーンショットの再生成、CI の検証） |
 
-## 受講者の手順（スターター ZIP）
+## 受講者の手順
 
-```
-npm install -D @playwright/test        # テストランナーを入れる（開発時だけ使うので -D）
-npx playwright install chromium        # テストで使うブラウザを入れる
-npx playwright codegen https://se-college-demo.takuyasuemura.workers.dev   # 録画
-npx playwright test                    # 実行
-```
-
-## スターター ZIP を作る（講師）
+テスト用のフォルダを作り、Playwright のひな形を作ります（どの OS でも同じ）。テストランナーとブラウザも一緒に入ります。
 
 ```
-node course/tools/build-starter.mjs    # dist/e2e-starter.zip
-gh release upload starter dist/e2e-starter.zip --clobber
+mkdir e2e
+cd e2e
+npm init -y playwright@latest -- --quiet --browser=chromium --no-examples
 ```
+
+`playwright.config.ts` の `use` に次の 2 行を書きます（`baseURL` はコメントを外してデモ環境の URL に、`trace` は失敗時に記録を残す設定に）。
+
+```ts
+    baseURL: 'https://se-college-demo.takuyasuemura.workers.dev',
+    trace: 'retain-on-failure',
+```
+
+あとは講座のとおり、`npx playwright codegen https://se-college-demo.takuyasuemura.workers.dev` で録画し、`tests/` に保存して `npx playwright test` で実行します。自分のアプリに入れるときも同じで、アプリのフォルダの中で `npm init playwright@latest` を実行し、`baseURL` を自分のアプリにするだけです。
 
 ## ローカルのアプリに対して完成版を実行する（CI と同じ手順）
 
