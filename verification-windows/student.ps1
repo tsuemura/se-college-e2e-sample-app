@@ -1,4 +1,4 @@
-# verification-windows/student.ps1
+﻿# verification-windows/student.ps1
 #
 # 講座「実践E2E自動テスト」（共有デモ環境版）を、Windows の受講者（コマンドプロンプトを使う山田さん）として
 # GitHub Actions の windows-latest ランナー上で一通り再現するスクリプト。
@@ -277,7 +277,10 @@ if (Use-Stage -Name '05-arranged.spec.ts' -LogPath $log) {
     Save-Report -Stage '06-final'
     Invoke-Node -LogPath $log -ArgLine "`"$shot`" report `"$(Join-Path $e2e 'playwright-report')`" `"$shotsDir`" 14-report-final 9324" | Out-Null
     $env:RECORD_OUTPUT_DIR = (Join-Path $videosDir 'final')
-    Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine "npx playwright test --config `"$recordConfig`"" -TimeoutSec 300 | Out-Null
+    # 設定ファイルは e2e の中に置かないと @playwright/test が解決できない（検証用の設定。受講者は使わない）
+    Copy-Item $recordConfig (Join-Path $e2e 'playwright.record.config.ts') -Force
+    Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine "npx playwright test --config playwright.record.config.ts" -TimeoutSec 300 | Out-Null
+    Remove-Item (Join-Path $e2e 'playwright.record.config.ts') -Force -ErrorAction SilentlyContinue
     Note "14 切り出し後: exit=$($e1.ExitCode)/$($e2.ExitCode)"
 }
 
