@@ -107,7 +107,7 @@ switch (mode) {
   }
   case 'report': {
     const [reportDir, outDir, name, port] = rest;
-    const proc = spawn('npx', ['playwright', 'show-report', reportDir, '--host', '127.0.0.1', '--port', String(port)], { shell: true, stdio: 'ignore', cwd: e2eDir });
+    const proc = spawn(`npx playwright show-report "${reportDir}" --host 127.0.0.1 --port ${port}`, { shell: true, stdio: 'ignore', cwd: e2eDir });
     const url = `http://127.0.0.1:${port}`;
     let ready = false;
     for (let i = 0; i < 100 && !ready; i++) { try { ready = (await fetch(url)).ok; } catch { await new Promise((r) => setTimeout(r, 200)); } }

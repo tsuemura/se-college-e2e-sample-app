@@ -220,8 +220,13 @@ Save-Report -Stage '01-first-run'
 Note "08 1 回目（--headed）: exit=$($r1.ExitCode)"
 
 $log = Write-Section '09-second-run.txt' 'スライド 41: もう一度実行する（同じ日時なので失敗するはず）'
-$r2 = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test' -TimeoutSec 300
-Append-Text $log "`n観察: 1 回目 exit=$($r1.ExitCode) / 2 回目 exit=$($r2.ExitCode) → スライドどおり 2 回目だけ失敗したか: $(($r1.ExitCode -eq 0) -and ($r2.ExitCode -ne 0))"
+# 受講者の PC と同じく、失敗したらレポートを自動で開く設定のまま実行する（ターミナルが止まる様子を記録するため、60 秒で打ち切る）
+Remove-Item Env:PLAYWRIGHT_HTML_OPEN -ErrorAction SilentlyContinue
+$r2 = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test' -TimeoutSec 60
+$env:PLAYWRIGHT_HTML_OPEN = 'never'
+Get-Process | Where-Object { $_.ProcessName -match '^chrome|^msedge' } | Stop-Process -Force -ErrorAction SilentlyContinue
+Append-Text $log "（上の実行は、レポートの表示で止まったままになるのを確かめるため 60 秒で打ち切った。受講者は Ctrl + C で止める）"
+Append-Text $log "`n観察: 1 回目 exit=$($r1.ExitCode) / 2 回目 exit=$($r2.ExitCode)（2 回目は打ち切りのため exit code は taskkill のもの）"
 Save-Report -Stage '02-second-run'
 Note "09 2 回目: exit=$($r2.ExitCode)"
 
@@ -329,6 +334,27 @@ $log = Write-Section '16-winget.txt' 'スライド 25: winget install --id OpenJ
 Invoke-Cmd -LogPath $log -Dir $home_ -CommandLine 'winget --version' -TimeoutSec 60 | Out-Null
 $wg = Invoke-Cmd -LogPath $log -Dir $home_ -CommandLine 'winget install --id OpenJS.NodeJS.LTS --scope user --accept-source-agreements --accept-package-agreements --disable-interactivity' -TimeoutSec 600
 Note "16 winget --scope user: exit=$($wg.ExitCode)"
+
+# ============================================================
+# 17. スライド 24・25・30: 素の Windows 11 と同じ実行ポリシー（LocalMachine = Restricted）で PowerShell から npm を打つ
+#     → スライドの対処（Set-ExecutionPolicy -Scope CurrentUser RemoteSigned）で直るか。最後に元に戻す
+# ============================================================
+$log = Write-Section '17-powershell-restricted.txt' 'スライド 24・25・30: 実行ポリシーが Restricted の PowerShell で npm / npx'
+$origPolicy = Get-ExecutionPolicy -Scope LocalMachine
+Append-Text $log "元の LocalMachine の実行ポリシー: $origPolicy → Restricted に変える（素の Windows 11 の既定）"
+try { Set-ExecutionPolicy -Scope LocalMachine Restricted -Force -ErrorAction Stop } catch { Append-Text $log "変更に失敗: $($_.Exception.Message)" }
+Invoke-PS -LogPath $log -Dir $home_ -CommandLine 'Get-ExecutionPolicy -List | Format-Table -AutoSize | Out-String' -TimeoutSec 60 | Out-Null
+Invoke-PS -LogPath $log -Dir $home_ -CommandLine 'node --version' -TimeoutSec 60 | Out-Null
+Invoke-PS -LogPath $log -Dir $home_ -CommandLine 'npm --version' -TimeoutSec 60 | Out-Null
+Invoke-PS -LogPath $log -Dir $e2e -CommandLine 'npx playwright --version' -TimeoutSec 60 | Out-Null
+Invoke-Cmd -LogPath $log -Dir $home_ -CommandLine 'npm --version' -TimeoutSec 60 | Out-Null
+Append-Text $log "`n--- スライドの対処を実行 ---"
+Invoke-PS -LogPath $log -Dir $home_ -CommandLine 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force; Get-ExecutionPolicy -List | Format-Table -AutoSize | Out-String' -TimeoutSec 60 | Out-Null
+$fixed = Invoke-PS -LogPath $log -Dir $home_ -CommandLine 'npm --version' -TimeoutSec 60
+Invoke-PS -LogPath $log -Dir $home_ -CommandLine 'Set-ExecutionPolicy -Scope CurrentUser Undefined -Force' -TimeoutSec 60 | Out-Null
+try { Set-ExecutionPolicy -Scope LocalMachine $origPolicy -Force -ErrorAction Stop } catch { Append-Text $log "元に戻すのに失敗: $($_.Exception.Message)" }
+Append-Text $log "実行ポリシーを元に戻した: $(Get-ExecutionPolicy -Scope LocalMachine)"
+Note "17 PowerShell Restricted: 対処後の npm exit=$($fixed.ExitCode)"
 
 # 自分が書いたテストの最終形と、各段階のコピーを成果物に含める
 if (Test-Path (Join-Path $e2e 'tests')) { Copy-Item (Join-Path $e2e 'tests') (Join-Path $outDir 'tests-final') -Recurse -Force }
