@@ -257,6 +257,31 @@ if (Use-Stage -Name '03-readable.spec.ts' -LogPath $log) {
 }
 
 # ============================================================
+# 10b. 受講者がやりがちな間違い（stages/mistakes/）を 1 回ずつ実行し、実際に出る表示を残す
+#      a: スライド 55 と 67 の row を両方残す / b: 「〜」を日本語入力で打つ（全角チルダ）/ c: メモ帳で .txt が付く
+#      d: スライド 85 の uniqueDate を定義せずに写す / e: スライド 89 の間違ったパスワードのテストを describe の中に書く
+# ============================================================
+$log = Write-Section '12b-mistakes.txt' 'スライド 36・55・67・85・89: 受講者がやりがちな間違いを 1 回ずつ実行'
+$mistakesDir = Join-Path $scriptRoot 'stages\mistakes'
+if (Test-Path $mistakesDir) {
+    $testsDir = Join-Path $e2e 'tests'
+    $saved = Join-Path $outDir 'reservation.spec.ts.keep'
+    Copy-Item (Join-Path $testsDir 'reservation.spec.ts') $saved -Force
+    foreach ($m in (Get-ChildItem $mistakesDir -File | Sort-Object Name)) {
+        Remove-Item (Join-Path $testsDir '*') -Force -ErrorAction SilentlyContinue
+        $dstName = if ($m.Name -like '*.txt') { 'reservation.spec.ts.txt' } else { 'reservation.spec.ts' }
+        [System.IO.File]::WriteAllText((Join-Path $testsDir $dstName), [System.IO.File]::ReadAllText($m.FullName, [Text.Encoding]::UTF8), (New-Object System.Text.UTF8Encoding($false)))
+        Append-Text $log "`n----- 間違い $($m.Name) を tests\$dstName として保存 -----"
+        Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'dir /b tests' -TimeoutSec 30 | Out-Null
+        $mr = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test' -TimeoutSec 300
+        Save-Report -Stage "mistake-$($m.BaseName)"
+        Note "12b 間違い $($m.Name): exit=$($mr.ExitCode)"
+    }
+    Remove-Item (Join-Path $testsDir '*') -Force -ErrorAction SilentlyContinue
+    Copy-Item $saved (Join-Path $testsDir 'reservation.spec.ts') -Force
+}
+
+# ============================================================
 # 11. スライド 81: 2 本目のテスト（前処理で前提の予約を作る。画面で）
 # ============================================================
 $log = Write-Section '13-second-test.txt' 'スライド 81: stages/04-second-test.spec.ts'
@@ -275,6 +300,10 @@ if (Use-Stage -Name '05-arranged.spec.ts' -LogPath $log) {
     $e2 = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test' -TimeoutSec 300
     Append-Text $log "`n観察: 1 回目 exit=$($e1.ExitCode) / 2 回目 exit=$($e2.ExitCode)"
     Save-Report -Stage '06-final'
+    # スライド 90 の実行のバリエーション（-g の日本語をコマンドプロンプトから渡す / --headed）
+    $g = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test -g "予約済み"' -TimeoutSec 300
+    $h = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test --headed' -TimeoutSec 300
+    Note "14 -g 予約済み: exit=$($g.ExitCode) / --headed: exit=$($h.ExitCode)"
     Invoke-Node -LogPath $log -ArgLine "`"$shot`" report `"$(Join-Path $e2e 'playwright-report')`" `"$shotsDir`" 14-report-final 9324" | Out-Null
     $env:RECORD_OUTPUT_DIR = (Join-Path $videosDir 'final')
     # 設定ファイルは e2e の中に置かないと @playwright/test が解決できない（検証用の設定。受講者は使わない）
@@ -291,6 +320,15 @@ $log = Write-Section '15-cleanup.txt' '後始末: デモ環境の自分の予約
 Invoke-Node -LogPath $log -ArgLine "`"$shot`" cleanup `"$marker`" 2031" | Out-Null
 Get-Process | Where-Object { $_.ProcessName -match '^chrome|^node' } | Stop-Process -Force -ErrorAction SilentlyContinue
 Note "15 後始末: 実行した"
+
+# ============================================================
+# 16. スライド 25「会社の PC で管理者権限がない」: winget でユーザー権限だけで Node.js LTS が入るか
+#     （テストが終わった後に試す。このプロセスの PATH は変えない）
+# ============================================================
+$log = Write-Section '16-winget.txt' 'スライド 25: winget install --id OpenJS.NodeJS.LTS --scope user'
+Invoke-Cmd -LogPath $log -Dir $home_ -CommandLine 'winget --version' -TimeoutSec 60 | Out-Null
+$wg = Invoke-Cmd -LogPath $log -Dir $home_ -CommandLine 'winget install --id OpenJS.NodeJS.LTS --scope user --accept-source-agreements --accept-package-agreements --disable-interactivity' -TimeoutSec 600
+Note "16 winget --scope user: exit=$($wg.ExitCode)"
 
 # 自分が書いたテストの最終形と、各段階のコピーを成果物に含める
 if (Test-Path (Join-Path $e2e 'tests')) { Copy-Item (Join-Path $e2e 'tests') (Join-Path $outDir 'tests-final') -Recurse -Force }

@@ -121,6 +121,14 @@ switch (mode) {
         await first.locator('a, .test-file-title').first().click().catch(() => {});
         await page.waitForTimeout(800);
         await page.screenshot({ path: out(outDir, `${name}-02-test-detail`), fullPage: true });
+        // スライド 48: Traces の画像をクリックしてトレースビューアーを開く
+        const traceLink = page.locator('a[href*="trace="], a[href*="/trace/"]').first();
+        console.log(`trace link: ${await traceLink.count()}`);
+        if (await traceLink.count()) {
+          await traceLink.click().catch((e) => console.log(`trace click failed: ${e.message}`));
+          await page.waitForTimeout(4000);
+          await page.screenshot({ path: out(outDir, `${name}-03-trace`) });
+        }
       }
     });
     proc.kill();
