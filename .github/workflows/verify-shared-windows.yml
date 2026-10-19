@@ -1,0 +1,31 @@
+name: Verify shared-env course on Windows
+
+# 共有デモ環境版の講座を、Windows の受講者として windows-latest ランナー上で再現する（検証用）。
+# 手順は verification-windows/student.ps1 を参照。
+on:
+  workflow_dispatch:
+  push:
+    branches: [verify/shared-windows]
+
+jobs:
+  student:
+    name: Windows attendee (shared demo env)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Run the attendee script in Windows PowerShell 5.1
+        shell: powershell
+        run: ./verification-windows/student.ps1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-windows-out
+          path: verification-windows/out
+          if-no-files-found: warn
