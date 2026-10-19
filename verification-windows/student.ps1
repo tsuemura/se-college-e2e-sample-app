@@ -225,8 +225,8 @@ Remove-Item Env:PLAYWRIGHT_HTML_OPEN -ErrorAction SilentlyContinue
 $r2 = Invoke-Cmd -LogPath $log -Dir $e2e -CommandLine 'npx playwright test' -TimeoutSec 60
 $env:PLAYWRIGHT_HTML_OPEN = 'never'
 Get-Process | Where-Object { $_.ProcessName -match '^chrome|^msedge' } | Stop-Process -Force -ErrorAction SilentlyContinue
-Append-Text $log "（上の実行は、レポートの表示で止まったままになるのを確かめるため 60 秒で打ち切った。受講者は Ctrl + C で止める）"
-Append-Text $log "`n観察: 1 回目 exit=$($r1.ExitCode) / 2 回目 exit=$($r2.ExitCode)（2 回目は打ち切りのため exit code は taskkill のもの）"
+if ($r2.Seconds -ge 55) { Append-Text $log "（上の実行はレポートの表示で止まったため 60 秒で打ち切った。受講者は Ctrl + C で止める）" } else { Append-Text $log "（上の実行はレポートを自動で開かずに $($r2.Seconds) 秒で終わった。ランナーの標準入力が対話端末ではないためと考えられる）" }
+Append-Text $log "`n観察: 1 回目 exit=$($r1.ExitCode) / 2 回目 exit=$($r2.ExitCode)（打ち切った場合の exit code は taskkill のもの）"
 Save-Report -Stage '02-second-run'
 Note "09 2 回目: exit=$($r2.ExitCode)"
 
