@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 // v2 で追加された「参加人数」に関するテスト
 
-const runId = Date.now(); // この実行だけの目印
+const runId = `${Date.now()}-${process.pid}`; // この実行だけの目印。時刻とプロセス番号（並列に動く worker ごとに違う値になる）
 
 async function loginAsTanaka(page: Page) {
   await page.request.post('/login', { form: { userId: 'tanaka', password: 'pass1234' } });
@@ -35,7 +35,7 @@ test.describe('参加人数', () => {
   test.afterEach(async ({ page }) => {
     const reservations = await (await page.request.get('/api/reservations')).json();
     for (const r of reservations) {
-      if (String(r.purpose).includes(String(runId))) {
+      if (String(r.purpose).includes(runId)) {
         await page.request.delete(`/api/reservations/${r.id}`);
       }
     }
