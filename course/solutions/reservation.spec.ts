@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// この実行だけの目印。テストが作るデータに付けて、自分が作ったものだけを片付ける
-const runId = Date.now();
+// この実行だけの目印。テストが作るデータに付けて、自分が作ったものだけを片付ける。
+// テストは複数の worker（プロセス）で並列に動き、ファイルは worker ごとに読み込まれる。
+// 時刻だけだと同じミリ秒に読み込んだ worker 同士で同じ値になり、他のテストの予約まで消してしまうので、プロセス番号を足す
+const runId = `${Date.now()}-${process.pid}`;
 
 // 田中さんとしてログインする（事前条件）。
 // 画面を通さず、ログインのフォームと同じ送信先に直接 POST する。
@@ -34,7 +36,7 @@ test.describe('会議室の予約', () => {
   test.afterEach(async ({ page }) => {
     const reservations = await (await page.request.get('/api/reservations')).json();
     for (const r of reservations) {
-      if (String(r.purpose).includes(String(runId))) {
+      if (String(r.purpose).includes(runId)) {
         await page.request.delete(`/api/reservations/${r.id}`);
       }
     }
